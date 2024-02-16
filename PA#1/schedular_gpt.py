@@ -22,7 +22,7 @@ def main(argv):
     base_filename = os.path.splitext(inputFile)[0]
 
     # Create the new filename with the desired extension
-    outputFile = base_filename + ".out"
+    outputFile = base_filename + "-student" + ".out"
 
     validAlgos = {
         'fcfs': 'First-Come First-Served',
@@ -67,7 +67,8 @@ def main(argv):
             print('Error: Missing parameter "process"')
 
     if use == 'fcfs':
-        fifo_scheduler(processes, runfor)
+        processes = fifo_scheduler(processes, runfor)
+        calculate_metrics(processes)
     else:
         # Handle other cases here
         pass
@@ -80,7 +81,7 @@ def main(argv):
                 print(f"{process.name} wait\t{process.waiting_time} turnaround\t{process.turnaround_time} response\t{process.response_time}", file=f)
 
         for process in processes:
-            print(f'{process.name} wait\t{process.waiting_time} turnaround\t{process.turnaround_time} response\t{process.response_time}')
+            print(f'{process.name} wait {process.waiting_time:3} turnaround {process.turnaround_time:3} response {process.response_time:3}')
     else:
         print('Error: Missing parameter end')
 
@@ -91,7 +92,6 @@ def calculate_metrics(processes):
         process.turnaround_time = process.finish_time - process.arrival_time
         process.waiting_time = process.turnaround_time - process.burst_time
         process.response_time = process.start_time - process.arrival_time
-        print(f'{process.name} wait {process.waiting_time:3} turnaround {process.turnaround_time:3} response {process.response_time:3}')
 
 
 def fifo_scheduler(processes, runfor):
@@ -140,7 +140,8 @@ def fifo_scheduler(processes, runfor):
         current_time = current_time + 1
         
     print(f"Finished at time {runfor}\n")
-    calculate_metrics(fifo_queue)
+    processes = fifo_queue.copy()
+    return processes
     
 
 if __name__ == "__main__":
