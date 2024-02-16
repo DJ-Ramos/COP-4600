@@ -16,15 +16,15 @@ class Process:
 
 
 def main(argv):
-    # inputFile = sys.argv[1]
+    inputFile = sys.argv[1]
     validAlgos = {
-        'fcfs': 'First In First Out',
+        'fcfs': 'First-Come First-Served',
         'sjf': 'Preemptive Shortest Job First',
         'rr': "Round Robin"
     }
 
     file = open(
-        rf"{os.path.dirname(os.path.realpath(__file__))}/pa1-testfiles/c10-fcfs.in", 'r')
+        rf"{os.path.dirname(os.path.realpath(__file__))}/pa1-testfiles/{inputFile}", 'r')
     processes = []
 
     directive = file.readline().split()
@@ -61,13 +61,11 @@ def main(argv):
 
     match use:
         case 'fcfs':
-            fifo_schedular(processes, runfor)
+            fifo_scheduler(processes, runfor)
 
     directive = file.readline().split()
     if directive[0] == 'end':
         file.close
-        for process in processes:
-            print(f'{process.name} wait\t{process.waiting_time} turnaround\t{process.turnaround_time} response\t{process.response_time}')
     else:
         print('Error: Missing parameter end')
 
@@ -78,41 +76,57 @@ def calculate_metrics(processes):
         process.turnaround_time = process.finish_time - process.arrival_time
         process.waiting_time = process.turnaround_time - process.burst_time
         process.response_time = process.start_time - process.arrival_time
+        print(f'{process.name} wait {process.waiting_time:3} turnaround {process.turnaround_time:3} response {process.response_time:3}')
 
 
-def fifo_schedular(processes, time_units):
+def fifo_scheduler(processes, runfor):
+    
+    print(f'{len(processes)} processes')
     print('Using First-Come First-Served')
-    is_process_running = False
-    time_in_queue = 0
-    processes.sort(key=lambda x: x.burst_time)
-    fifo_queue = []
+    processes.sort(key=lambda x: x.arrival_time)
+    fifo_queue = processes.copy()
+    current_time = 0
+    i = 0
+    queue = []
+    
+    while processes or queue:
+        # Check for arriving processes at this time and queue them
+        while processes and processes[0].arrival_time <= current_time:
+            arriving_process = processes.pop(0)
+            queue.append(arriving_process)
+            print(f"Time {current_time:3} : {arriving_process.name} arrived")
 
-    for current_time in range(time_units):
-        for process in processes:
-            if current_time == process.arrival_time:
-                print(f'Time \t {current_time} : {process.name} arrived')
-                fifo_queue.append(process)
-                if is_process_running == False:
-                    print(f'Time \t {current_time} : {process.name} selected (burst   {process.burst_time})')
-                    process.start_time = current_time
-                    process.finish_time = process.start_time + process.burst_time
-                    is_process_running = True
-            elif current_time == process.finish_time > 0:
-                print(f'Time \t {current_time} : {process.name} finished')
-                process.status = "finished"
-                fifo_queue.pop(0)
-                is_process_running = False
-                if is_process_running == False and fifo_queue != []:
-                    print(f'Time \t {current_time} : {fifo_queue[0].name} selected (burst   {fifo_queue[0].burst_time})')
-                    fifo_queue[0].start_time = current_time
-                    fifo_queue[0].finish_time = fifo_queue[0].start_time + fifo_queue[0].burst_time
-                    is_process_running = True
-        if is_process_running == False:
-            print(f'Time \t {current_time} : Idle')
+        if queue:
+            # If there's a process to run, select and run it
+            current_process = queue.pop(0)
+            print(f"Time {current_time:3} : {current_process.name} selected (burst {current_process.burst_time:3})")
+            current_process.start_time = current_time
+            for _ in range(current_process.burst_time):
+                # Check for process arrivals during the burst time
+                current_time += 1
+                for i in range(len(processes)):
+                    if processes and processes[i].arrival_time == current_time:
+                        arriving_process = processes.pop(i)
+                        queue.append(arriving_process)
+                        print(f"Time {current_time:3} : {arriving_process.name} arrived")
+                        break  # Process the next time step
 
-    print(f'Finished  at time {time_units}\n')
-    calculate_metrics(processes)
-
+            print(f"Time {current_time:3} : {current_process.name} finished")
+            current_process.finish_time = current_process.start_time + current_process.burst_time
+        else:
+            # If no process is running and there are processes yet to arrive
+            if processes:
+                print(f"Time {current_time:3} : Idle")
+                current_time += 1  # Increment time until the next process arrives      
+    
+    # After all processes are finished
+    for x in range(current_time, runfor):
+        print(f'Time {current_time:3} : Idle')
+        current_time = current_time + 1
+        
+    print(f"Finished at time {runfor}\n")
+    calculate_metrics(fifo_queue)
+    
 
 if __name__ == "__main__":
     main(sys.argv[1:])
