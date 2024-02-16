@@ -17,6 +17,13 @@ class Process:
 
 def main(argv):
     inputFile = sys.argv[1]
+
+    # Get the base filename (without extension)
+    base_filename = os.path.splitext(inputFile)[0]
+
+    # Create the new filename with the desired extension
+    outputFile = base_filename + ".out"
+
     validAlgos = {
         'fcfs': 'First-Come First-Served',
         'sjf': 'Preemptive Shortest Job First',
@@ -59,13 +66,21 @@ def main(argv):
         else:
             print('Error: Missing parameter "process"')
 
-    match use:
-        case 'fcfs':
-            fifo_scheduler(processes, runfor)
+    if use == 'fcfs':
+        fifo_scheduler(processes, runfor)
+    else:
+        # Handle other cases here
+        pass
 
     directive = file.readline().split()
     if directive[0] == 'end':
         file.close
+        with open(outputFile, "w") as f:
+            for process in processes:
+                print(f"{process.name} wait\t{process.waiting_time} turnaround\t{process.turnaround_time} response\t{process.response_time}", file=f)
+
+        for process in processes:
+            print(f'{process.name} wait\t{process.waiting_time} turnaround\t{process.turnaround_time} response\t{process.response_time}')
     else:
         print('Error: Missing parameter end')
 
