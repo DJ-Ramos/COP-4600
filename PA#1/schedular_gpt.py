@@ -145,69 +145,72 @@ def fifo_scheduler(processes, runfor):
     print(f"Finished at time {runfor}\n")
     processes = fifo_queue.copy()
     return processes
-    
+
+
 def sjf_scheduler(processes, time_units):
+    # Initialize remaining burst time for each process
     remaining_burst_times = [process.burst_time for process in processes]
-    total_processes = len(processes)
+    
+    # Initialize variables
     time = 0
     selected_process = None
+    
     print("Using preemptive Shortest Job First")
     
-    while time < time_units and total_processes >= 0:
-        # Track arriving processes
+    # Main simulation loop
+    while time < time_units:
+        # 1. Check for arrived processes and print them
         arrived_processes = [process for process in processes if process.arrival_time == time]
-        
-        # Print arriving processes
         for process in arrived_processes:
             print(f"Time {time:4} : {process.name} arrived")
-            if selected_process is None:
-                selected_process = process
         
-        # Check if the selected process has finished
-        if selected_process is not None and selected_process.status == "Finished":
-            selected_process.finish_time = time  # Update finish time
+        # 2. Check if the currently selected process has a status of finished
+        if selected_process and selected_process.status == "Finished":
+            selected_process.finish_time = time  # Set finish time
             print(f"Time {time:4} : {selected_process.name} finished")
-            selected_process = None
+            selected_process = None  # Reset selected process
         
-        # Select process with shortest burst time
-        shortest_burst = float('inf') if selected_process is None else remaining_burst_times[processes.index(selected_process)]
+        # 3. Determine the shortest remaining burst time
+        shortest_burst = float('inf') if not selected_process else remaining_burst_times[processes.index(selected_process)]
+        
+        # 4. Loop through all processes to select the next process
         for process in processes:
-            if process.status == "Waiting" and process.arrival_time <= time and remaining_burst_times[processes.index(process)] < shortest_burst:
-                shortest_burst = remaining_burst_times[processes.index(process)]
+            if process.status in ["Waiting", "Running"] and process.arrival_time <= time and process.burst_time < shortest_burst:
                 selected_process = process
+                shortest_burst = remaining_burst_times[processes.index(selected_process)]
         
-        # Print selected process if not already running
-        if selected_process is not None and selected_process.status != "Running":
-            print(f"Time {time:4} : {selected_process.name} selected (burst {remaining_burst_times[processes.index(selected_process)]})")
+        # 5. Set start time if a new process is selected
+        if selected_process and remaining_burst_times[processes.index(selected_process)] == selected_process.burst_time:
+            selected_process.start_time = time
         
-        if selected_process is not None:
-            if remaining_burst_times[processes.index(selected_process)] == selected_process.burst_time:
-                selected_process.start_time = time
+        # 6. If selected process is not None and it has status of waiting, print that it was selected and give it a status of running
+        if selected_process and selected_process.status == "Waiting":
+            print(f"Time {time:4} : {selected_process.name} selected (burst {selected_process.burst_time})")
             selected_process.status = "Running"
-            remaining_burst_times[processes.index(selected_process)] -= 1
-            if remaining_burst_times[processes.index(selected_process)] == 0:
-                selected_process.status = "Finished"
-                total_processes -= 1
-            else:
-                for process in processes:
-                    if process != selected_process and process.status == "Running":
-                        process.status = "Waiting"
         
-        # Print idle if no process is running
-        if selected_process is None:
+        # 7. Decrement remaining burst time if a process is running
+        if selected_process:
+            remaining_burst_times[processes.index(selected_process)] -= 1
+        
+        # 8. If selected process is not None and its remaining burst time is zero, set status to Finished
+        if selected_process and remaining_burst_times[processes.index(selected_process)] == 0:
+            selected_process.status = "Finished"
+        
+        # 9. Check if any processes have Running status and are not the selected process. If so, set their statuses to Waiting
+        for process in processes:
+            if process != selected_process and process.status == "Running":
+                process.status = "Waiting"
+        
+        # 10. If selected process is None, print Idle
+        if not selected_process:
             print(f"Time {time:4} : Idle")
         
-        time += 1
+        time += 1  # Increment time
     
-    # Print remaining idle time if any
-    while time < time_units:
-        if any(process.status == "Running" for process in processes):
-            break
-        print(f"Time {time:4} : Idle")
-        time += 1
+    print(f"Finished at time {time}\n")
     
-    print(f"Finished at time {time:4}\n")
     return processes
+
 
 if __name__ == "__main__":
     main(sys.argv[1:])
