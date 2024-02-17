@@ -10,7 +10,7 @@ class Process:
         self.status = "Waiting"
         self.start_time = 0
         self.finish_time = 0
-        self.tmp_time = burst_time
+        self.remaining_time = burst_time
         self.turnaround_time = 0
         self.waiting_time = 0
         self.response_time = 0
@@ -165,15 +165,15 @@ def sjf_scheduler(processes, runfor):
 
         # Select the next process to run based on SRTF
         if ready_queue:
-            ready_queue.sort(key=lambda x: x.tmp_time)  # Sort by shortest remaining time
+            ready_queue.sort(key=lambda x: x.remaining_time)  # Sort by shortest remaining time
             current_process = ready_queue[0]
             if current_process.arrival_time == time or is_process_running == False:
-                print(f"Time {time:3} : {current_process.name} selected (burst {current_process.tmp_time:3})")
+                print(f"Time {time:3} : {current_process.name} selected (burst {current_process.remaining_time:3})")
                 if current_process.start_time == 0:
                     current_process.start_time = time
                 is_process_running = True
-            current_process.tmp_time -= 1
-            if current_process.tmp_time == 0:
+            current_process.remaining_time -= 1
+            if current_process.remaining_time == 0:
                 while processes and processes[0].arrival_time <= time + 1:
                     arriving_process = processes.pop(0)
                     ready_queue.append(arriving_process)
