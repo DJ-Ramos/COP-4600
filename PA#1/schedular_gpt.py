@@ -10,19 +10,20 @@ class Process:
         self.status = "Waiting"
         self.start_time = 0
         self.finish_time = 0
+        self.tmp_time = burst_time
         self.turnaround_time = 0
         self.waiting_time = 0
         self.response_time = 0
 
 
 def main(argv):
-    inputFile = sys.argv[1]
+    #inputFile = sys.argv[1]
 
     # Get the base filename (without extension)
-    base_filename = os.path.splitext(inputFile)[0]
+    #base_filename = os.path.splitext(inputFile)[0]
 
     # Create the new filename with the desired extension
-    outputFile = base_filename + "-student" + ".out"
+    #outputFile = base_filename + ".out"
 
     validAlgos = {
         'fcfs': 'First-Come First-Served',
@@ -31,7 +32,7 @@ def main(argv):
     }
 
     file = open(
-        rf"{os.path.dirname(os.path.realpath(__file__))}/pa1-testfiles/{inputFile}", 'r')
+        rf"{os.path.dirname(os.path.realpath(__file__))}/pa1-testfiles/c2-sjf.in", 'r')
     processes = []
 
     directive = file.readline().split()
@@ -69,16 +70,18 @@ def main(argv):
     if use == 'fcfs':
         processes = fifo_scheduler(processes, runfor)
         calculate_metrics(processes)
-    else:
+    elif use == 'sjf':
+        processes = sjf_scheduler(processes, runfor)
+        calculate_metrics(processes)
         # Handle other cases here
         pass
 
     directive = file.readline().split()
     if directive[0] == 'end':
         file.close
-        with open(outputFile, "w") as f:
-            for process in processes:
-                print(f"{process.name} wait\t{process.waiting_time} turnaround\t{process.turnaround_time} response\t{process.response_time}", file=f)
+        # with open(outputFile, "w") as f:
+        #     for process in processes:
+        #         print(f"{process.name} wait\t{process.waiting_time} turnaround\t{process.turnaround_time} response\t{process.response_time}", file=f)
 
         for process in processes:
             print(f'{process.name} wait {process.waiting_time:3} turnaround {process.turnaround_time:3} response {process.response_time:3}')
@@ -141,6 +144,57 @@ def fifo_scheduler(processes, runfor):
         
     print(f"Finished at time {runfor}\n")
     processes = fifo_queue.copy()
+    return processes
+    
+def sjf_scheduler(processes, runfor):
+    
+    print(f'{len(processes)} processes')
+    print('Using preemptive Shortest Job First')
+    is_process_running = False
+    time = 0
+    ready_queue = []
+    processes.sort(key=lambda x: x.arrival_time)  # Sort by arrival time for processing order
+    sjf_queue = processes.copy()
+
+    while processes or ready_queue:
+        # Add new arriving processes to the ready queue
+        while processes and processes[0].arrival_time <= time:
+            arriving_process = processes.pop(0)
+            ready_queue.append(arriving_process)
+            print(f"Time {time:3} : {arriving_process.name} arrived")
+
+        # Select the next process to run based on SRTF
+        if ready_queue:
+            ready_queue.sort(key=lambda x: x.tmp_time)  # Sort by shortest remaining time
+            current_process = ready_queue[0]
+            if current_process.arrival_time == time or is_process_running == False:
+                print(f"Time {time:3} : {current_process.name} selected (burst {current_process.tmp_time:3})")
+                if current_process.start_time == 0:
+                    current_process.start_time = time
+                is_process_running = True
+            current_process.tmp_time -= 1
+            if current_process.tmp_time == 0:
+                while processes and processes[0].arrival_time <= time + 1:
+                    arriving_process = processes.pop(0)
+                    ready_queue.append(arriving_process)
+                    print(f"Time {time + 1:3} : {arriving_process.name} arrived")
+                current_process.finish_time = time + 1
+                print(f"Time {current_process.finish_time:3} : {current_process.name} finished")
+                is_process_running = False
+                ready_queue.pop(0)  # Remove finished process from ready queue
+        else:
+            if not processes:
+                break  # If no processes left to arrive and ready queue is empty, end simulation
+            print(f"Time {time:3} : Idle")
+
+        time += 1
+        
+    for x in range(time, runfor):
+        print(f'Time {time:3} : Idle')
+        time = time + 1
+
+    print(f"Finished at time {runfor:3}")
+    processes = sjf_queue.copy()
     return processes
     
 
