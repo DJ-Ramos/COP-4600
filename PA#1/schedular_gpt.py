@@ -162,20 +162,22 @@ def sjf_scheduler(processes, time_units):
     # Initialize variables
     time = 0
     selected_process = None
+    results = []
     
-    print("Using preemptive Shortest Job First")
+    # Append "Using preemptive Shortest Job First" to results
+    results.append("Using preemptive Shortest Job First")
     
     # Main simulation loop
     while time < time_units:
-        # 1. Check for arrived processes and print them
+        # 1. Check for arrived processes and append arrival statement to results accordingly
         arrived_processes = [process for process in processes if process.arrival_time == time]
         for process in arrived_processes:
-            print(f"Time {time:4} : {process.name} arrived")
+            results.append(f"Time {time:4} : {process.name} arrived")
         
         # 2. Check if the currently selected process has a status of finished
         if selected_process and selected_process.status == "Finished":
             selected_process.finish_time = time  # Set finish time
-            print(f"Time {time:4} : {selected_process.name} finished")
+            results.append(f"Time {time:4} : {selected_process.name} finished")
             selected_process = None  # Reset selected process
         
         # 3. Determine the shortest remaining burst time
@@ -183,7 +185,7 @@ def sjf_scheduler(processes, time_units):
         
         # 4. Loop through all processes to select the next process
         for process in processes:
-            if process.status in ["Waiting", "Running"] and process.arrival_time <= time and process.burst_time < shortest_burst:
+            if process.status in ["Waiting", "Running"] and process.arrival_time <= time and remaining_burst_times[processes.index(process)] < shortest_burst:
                 selected_process = process
                 shortest_burst = remaining_burst_times[processes.index(selected_process)]
         
@@ -191,9 +193,9 @@ def sjf_scheduler(processes, time_units):
         if selected_process and remaining_burst_times[processes.index(selected_process)] == selected_process.burst_time:
             selected_process.start_time = time
         
-        # 6. If selected process is not None and it has status of waiting, print that it was selected and give it a status of running
+        # 6. If selected process is not None and it has status of waiting, append the statement that it was selected to the results array and give it a status of running
         if selected_process and selected_process.status == "Waiting":
-            print(f"Time {time:4} : {selected_process.name} selected (burst {selected_process.burst_time})")
+            results.append(f"Time {time:4} : {selected_process.name} selected (burst {selected_process.burst_time})")
             selected_process.status = "Running"
         
         # 7. Decrement remaining burst time if a process is running
@@ -209,15 +211,16 @@ def sjf_scheduler(processes, time_units):
             if process != selected_process and process.status == "Running":
                 process.status = "Waiting"
         
-        # 10. If selected process is None, print Idle
+        # 10. If selected process is None, append an Idle statement to results
         if not selected_process:
-            print(f"Time {time:4} : Idle")
+            results.append(f"Time {time:4} : Idle")
         
         time += 1  # Increment time
     
-    print(f"Finished at time {time}\n")
+    # Append finish time to results
+    results.append(f"Finished at time {time}")
     
-    return processes
+    return processes, results
 
 def rr_scheduler(processes, quantum, runfor):
     time = 0
