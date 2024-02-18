@@ -165,7 +165,6 @@ def sjf_scheduler(processes, time_units):
     selected_process = None
     results = []
     
-    # Append "Using preemptive Shortest Job First" to results
     results.append("Using preemptive Shortest Job First")
     
     # Main simulation loop
@@ -186,7 +185,7 @@ def sjf_scheduler(processes, time_units):
         
         # 4. Loop through all processes to select the next process
         for process in processes:
-            if process.status in ["Waiting", "Running"] and process.arrival_time <= time and remaining_burst_times[processes.index(process)] < shortest_burst:
+            if process.status in ["Waiting", "Running"] and process.arrival_time <= time and process.burst_time < shortest_burst:
                 selected_process = process
                 shortest_burst = remaining_burst_times[processes.index(selected_process)]
         
@@ -194,9 +193,9 @@ def sjf_scheduler(processes, time_units):
         if selected_process and remaining_burst_times[processes.index(selected_process)] == selected_process.burst_time:
             selected_process.start_time = time
         
-        # 6. If selected process is not None and it has status of waiting, append the statement that it was selected to the results array and give it a status of running
+        # 6. If selected process is not None and it has status of waiting, append the selection statement to the results array and give it a status of running
         if selected_process and selected_process.status == "Waiting":
-            results.append(f"Time {time:4} : {selected_process.name} selected (burst {selected_process.burst_time})")
+            results.append(f"Time {time:4} : {selected_process.name} selected (burst {remaining_burst_times[processes.index(selected_process)]})")
             selected_process.status = "Running"
         
         # 7. Decrement remaining burst time if a process is running
@@ -218,10 +217,10 @@ def sjf_scheduler(processes, time_units):
         
         time += 1  # Increment time
     
-    # Append finish time to results
     results.append(f"Finished at time {time}\n")
     
     return processes, results
+
 
 def rr_scheduler(processes, quantum, runfor):
     time = 0
