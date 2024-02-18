@@ -148,56 +148,70 @@ def fifo_scheduler(processes, runfor):
     print(f"Finished at time {runfor}\n")
     processes = fifo_queue.copy()
     return processes
+
+
+def sjf_scheduler(processes, time_units):
+    # Initialize remaining burst time for each process
+    remaining_burst_times = [process.burst_time for process in processes]
     
-def sjf_scheduler(processes, runfor):
-    
-    print(f'{len(processes)} processes')
-    print('Using preemptive Shortest Job First')
-    is_process_running = False
+    # Initialize variables
     time = 0
-    ready_queue = []
-    processes.sort(key=lambda x: x.arrival_time)  # Sort by arrival time for processing order
-    sjf_queue = processes.copy()
-
-    while processes or ready_queue:
-        # Add new arriving processes to the ready queue
-        while processes and processes[0].arrival_time <= time:
-            arriving_process = processes.pop(0)
-            ready_queue.append(arriving_process)
-            print(f"Time {time:3} : {arriving_process.name} arrived")
-
-        # Select the next process to run based on SRTF
-        if ready_queue:
-            ready_queue.sort(key=lambda x: x.remaining_time)  # Sort by shortest remaining time
-            current_process = ready_queue[0]
-            if current_process.arrival_time == time or is_process_running == False:
-                print(f"Time {time:3} : {current_process.name} selected (burst {current_process.remaining_time:3})")
-                if current_process.start_time == 0:
-                    current_process.start_time = time
-                is_process_running = True
-            current_process.remaining_time -= 1
-            if current_process.remaining_time == 0:
-                while processes and processes[0].arrival_time <= time + 1:
-                    arriving_process = processes.pop(0)
-                    ready_queue.append(arriving_process)
-                    print(f"Time {time + 1:3} : {arriving_process.name} arrived")
-                current_process.finish_time = time + 1
-                print(f"Time {current_process.finish_time:3} : {current_process.name} finished")
-                is_process_running = False
-                ready_queue.pop(0)  # Remove finished process from ready queue
-        else:
-            if not processes:
-                break  # If no processes left to arrive and ready queue is empty, end simulation
-            print(f"Time {time:3} : Idle")
-
-        time += 1
+    selected_process = None
+    
+    print("Using preemptive Shortest Job First")
+    
+    # Main simulation loop
+    while time < time_units:
+        # 1. Check for arrived processes and print them
+        arrived_processes = [process for process in processes if process.arrival_time == time]
+        for process in arrived_processes:
+            print(f"Time {time:4} : {process.name} arrived")
         
-    for x in range(time, runfor):
-        print(f'Time {time:3} : Idle')
-        time = time + 1
-
-    print(f"Finished at time {runfor:3}")
-    processes = sjf_queue.copy()
+        # 2. Check if the currently selected process has a status of finished
+        if selected_process and selected_process.status == "Finished":
+            selected_process.finish_time = time  # Set finish time
+            print(f"Time {time:4} : {selected_process.name} finished")
+            selected_process = None  # Reset selected process
+        
+        # 3. Determine the shortest remaining burst time
+        shortest_burst = float('inf') if not selected_process else remaining_burst_times[processes.index(selected_process)]
+        
+        # 4. Loop through all processes to select the next process
+        for process in processes:
+            if process.status in ["Waiting", "Running"] and process.arrival_time <= time and process.burst_time < shortest_burst:
+                selected_process = process
+                shortest_burst = remaining_burst_times[processes.index(selected_process)]
+        
+        # 5. Set start time if a new process is selected
+        if selected_process and remaining_burst_times[processes.index(selected_process)] == selected_process.burst_time:
+            selected_process.start_time = time
+        
+        # 6. If selected process is not None and it has status of waiting, print that it was selected and give it a status of running
+        if selected_process and selected_process.status == "Waiting":
+            print(f"Time {time:4} : {selected_process.name} selected (burst {selected_process.burst_time})")
+            selected_process.status = "Running"
+        
+        # 7. Decrement remaining burst time if a process is running
+        if selected_process:
+            remaining_burst_times[processes.index(selected_process)] -= 1
+        
+        # 8. If selected process is not None and its remaining burst time is zero, set status to Finished
+        if selected_process and remaining_burst_times[processes.index(selected_process)] == 0:
+            selected_process.status = "Finished"
+        
+        # 9. Check if any processes have Running status and are not the selected process. If so, set their statuses to Waiting
+        for process in processes:
+            if process != selected_process and process.status == "Running":
+                process.status = "Waiting"
+        
+        # 10. If selected process is None, print Idle
+        if not selected_process:
+            print(f"Time {time:4} : Idle")
+        
+        time += 1  # Increment time
+    
+    print(f"Finished at time {time}\n")
+    
     return processes
 
 def rr_scheduler(processes, quantum, runfor):
