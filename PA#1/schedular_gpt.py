@@ -83,12 +83,13 @@ def main(argv):
     if directive[0] == 'end':
         file.close
         with open(outputFile, "w") as f:
-            print(results, file=f)
+            for result in results:
+                print(result, file=f)
             for process in processes:
-                print(f"{process.name} wait\t{process.waiting_time} turnaround\t{process.turnaround_time} response\t{process.response_time}", file=f)
-
-        for process in processes:
-            print(f'{process.name} wait {process.waiting_time:3} turnaround {process.turnaround_time:3} response {process.response_time:3}')
+                if process.status != "Finished":
+                    print(f"{process.name} did not finish", file=f)
+                else:
+                    print(f"{process.name} wait\t{process.waiting_time} turnaround\t{process.turnaround_time} response\t{process.response_time}", file=f)
     else:
         print('Error: Missing parameter end')
 
