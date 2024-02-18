@@ -17,13 +17,13 @@ class Process:
 
 
 def main(argv):
-    #inputFile = sys.argv[1]
+    inputFile = sys.argv[1]
 
     # Get the base filename (without extension)
-    #base_filename = os.path.splitext(inputFile)[0]
+    base_filename = os.path.splitext(inputFile)[0]
 
     # Create the new filename with the desired extension
-    #outputFile = base_filename + ".out"
+    outputFile = base_filename + ".out"
 
     validAlgos = {
         'fcfs': 'First-Come First-Served',
@@ -32,7 +32,7 @@ def main(argv):
     }
 
     file = open(
-        rf"{os.path.dirname(os.path.realpath(__file__))}/pa1-testfiles/c10-rr.in", 'r')
+        rf"{os.path.dirname(os.path.realpath(__file__))}/pa1-testfiles/{inputFile}", 'r')
     processes = []
 
     directive = file.readline().split()
@@ -68,13 +68,13 @@ def main(argv):
             print('Error: Missing parameter "process"')
 
     if use == 'fcfs':
-        processes = fifo_scheduler(processes, runfor)
+        processes, results = fifo_scheduler(processes, runfor)
         calculate_metrics(processes)
     elif use == 'sjf':
-        processes = sjf_scheduler(processes, runfor)
+        processes, results = sjf_scheduler(processes, runfor)
         calculate_metrics(processes)
     elif use == 'rr':
-        processes = rr_scheduler(processes, quantum, runfor)
+        processes, results = rr_scheduler(processes, quantum, runfor)
         calculate_metrics(processes)
         # Handle other cases here
         pass
@@ -82,9 +82,10 @@ def main(argv):
     directive = file.readline().split()
     if directive[0] == 'end':
         file.close
-        # with open(outputFile, "w") as f:
-        #     for process in processes:
-        #         print(f"{process.name} wait\t{process.waiting_time} turnaround\t{process.turnaround_time} response\t{process.response_time}", file=f)
+        with open(outputFile, "w") as f:
+            print(results, file=f)
+            for process in processes:
+                print(f"{process.name} wait\t{process.waiting_time} turnaround\t{process.turnaround_time} response\t{process.response_time}", file=f)
 
         for process in processes:
             print(f'{process.name} wait {process.waiting_time:3} turnaround {process.turnaround_time:3} response {process.response_time:3}')
@@ -102,25 +103,27 @@ def calculate_metrics(processes):
 
 def fifo_scheduler(processes, runfor):
     
-    print(f'{len(processes)} processes')
-    print('Using First-Come First-Served')
+    results.append(f'{len(processes)} processes')
+    results.append('Using First-Come First-Served')
     processes.sort(key=lambda x: x.arrival_time)
     fifo_queue = processes.copy()
     current_time = 0
     i = 0
     queue = []
+    results = []
     
     while processes or queue:
         # Check for arriving processes at this time and queue them
-        while processes and processes[0].arrival_time <= current_time:
+        while processes and processes[0].arrival_time <= current_time and processes[0].status == 'Waiting':
             arriving_process = processes.pop(0)
             queue.append(arriving_process)
-            print(f"Time {current_time:3} : {arriving_process.name} arrived")
+            results.append(f"Time {current_time:3} : {arriving_process.name} arrived")
+            arriving_process.status = 'Arrived'
 
-        if queue:
+        if queue and queue[0].status == 'Arrived':
             # If there's a process to run, select and run it
             current_process = queue.pop(0)
-            print(f"Time {current_time:3} : {current_process.name} selected (burst {current_process.burst_time:3})")
+            results.append(f"Time {current_time:3} : {current_process.name} selected (burst {current_process.burst_time:3})")
             current_process.start_time = current_time
             for _ in range(current_process.burst_time):
                 # Check for process arrivals during the burst time
@@ -129,25 +132,27 @@ def fifo_scheduler(processes, runfor):
                     if processes and processes[i].arrival_time == current_time:
                         arriving_process = processes.pop(i)
                         queue.append(arriving_process)
-                        print(f"Time {current_time:3} : {arriving_process.name} arrived")
+                        results.append(f"Time {current_time:3} : {arriving_process.name} arrived")
+                        arriving_process.status = 'Arrived'
                         break  # Process the next time step
 
-            print(f"Time {current_time:3} : {current_process.name} finished")
+            results.append(f"Time {current_time:3} : {current_process.name} finished")
+            arriving_process.status = 'Finished'
             current_process.finish_time = current_process.start_time + current_process.burst_time
         else:
             # If no process is running and there are processes yet to arrive
             if processes:
-                print(f"Time {current_time:3} : Idle")
+                results.append(f"Time {current_time:3} : Idle")
                 current_time += 1  # Increment time until the next process arrives      
     
     # After all processes are finished
     for x in range(current_time, runfor):
-        print(f'Time {current_time:3} : Idle')
+        results.append(f'Time {current_time:3} : Idle')
         current_time = current_time + 1
         
-    print(f"Finished at time {runfor}\n")
+    results.append(f"Finished at time {runfor}\n")
     processes = fifo_queue.copy()
-    return processes
+    return processes, results
 
 
 def sjf_scheduler(processes, time_units):
@@ -224,16 +229,17 @@ def rr_scheduler(processes, quantum, runfor):
     running_process_start_time = 0
     arrival_before_finish = False
     rr_queue = processes.copy()
+    results = []
     
-    print(f'{len(processes)} processes')
-    print('Using Round-Robin')
-    print(f'Quantum {quantum:3}')
+    results.append(f'{len(processes)} processes')
+    results.append('Using Round-Robin')
+    results.append(f'Quantum {quantum:3}')
     while time < runfor:
         # Check for new arrivals
         for process in processes:
             if process.arrival_time == time:
                 ready_queue.append(process)
-                print(f"Time {time:3} : {process.name} arrived")
+                results.append(f"Time {time:3} : {process.name} arrived")
         
         if arrival_before_finish == True:
             time += 1
@@ -242,7 +248,7 @@ def rr_scheduler(processes, quantum, runfor):
         # Check if current process finishes or quantum expires
         if running_process and (time == running_process_start_time + quantum or running_process.remaining_time == 0):
             if running_process.remaining_time == 0:
-                print(f"Time {time:3} : {running_process.name} finished")
+                results.append(f"Time {time:3} : {running_process.name} finished")
                 finished_processes += 1
                 running_process = None
             else:
@@ -253,7 +259,7 @@ def rr_scheduler(processes, quantum, runfor):
         if not running_process and ready_queue:
             running_process = ready_queue.pop(0)
             running_process_start_time = time
-            print(f"Time {time:3} : {running_process.name} selected (burst {running_process.remaining_time:3})")
+            results.append(f"Time {time:3} : {running_process.name} selected (burst {running_process.remaining_time:3})")
             if running_process.remaining_time == running_process.burst_time:
                     running_process.start_time = time
 
@@ -264,9 +270,9 @@ def rr_scheduler(processes, quantum, runfor):
                 for process in processes:
                     if process.arrival_time == time + 1:
                         ready_queue.append(process)
-                        print(f"Time {time + 1:3} : {process.name} arrived")
+                        results.append(f"Time {time + 1:3} : {process.name} arrived")
                         arrival_before_finish = True
-                print(f"Time {time + 1:3} : {running_process.name} finished")
+                results.append(f"Time {time + 1:3} : {running_process.name} finished")
                 running_process.finish_time = time + 1
                 finished_processes += 1
                 running_process = None
@@ -276,11 +282,11 @@ def rr_scheduler(processes, quantum, runfor):
 
         # Check if simulation should idle
         if not running_process and not any(p.arrival_time == time for p in processes) and ready_queue == [] and time < runfor:
-            print(f"Time {time:3} : Idle")
+            results.append(f"Time {time:3} : Idle")
 
-    print(f"Finished at time {time:3}")
+    results.append(f"Finished at time {time:3}")
     processes = rr_queue.copy()
-    return processes
+    return processes, results
     
 
 if __name__ == "__main__":
