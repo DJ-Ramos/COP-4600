@@ -103,7 +103,7 @@ def calculate_metrics(processes):
 
 
 def fifo_scheduler(processes, runfor):
-    
+    results = []
     results.append(f'{len(processes)} processes')
     results.append('Using First-Come First-Served')
     processes.sort(key=lambda x: x.arrival_time)
@@ -111,7 +111,7 @@ def fifo_scheduler(processes, runfor):
     current_time = 0
     i = 0
     queue = []
-    results = []
+
     
     while processes or queue:
         # Check for arriving processes at this time and queue them
