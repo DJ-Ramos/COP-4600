@@ -219,7 +219,7 @@ def sjf_scheduler(processes, time_units):
         time += 1  # Increment time
     
     # Append finish time to results
-    results.append(f"Finished at time {time}")
+    results.append(f"Finished at time {time}\n")
     
     return processes, results
 
