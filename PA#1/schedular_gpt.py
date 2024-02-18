@@ -32,7 +32,7 @@ def main(argv):
     }
 
     file = open(
-        rf"{os.path.dirname(os.path.realpath(__file__))}/pa1-testfiles/c2-sjf.in", 'r')
+        rf"{os.path.dirname(os.path.realpath(__file__))}/pa1-testfiles/c10-rr.in", 'r')
     processes = []
 
     directive = file.readline().split()
@@ -72,6 +72,9 @@ def main(argv):
         calculate_metrics(processes)
     elif use == 'sjf':
         processes = sjf_scheduler(processes, runfor)
+        calculate_metrics(processes)
+    elif use == 'rr':
+        processes = rr_scheduler(processes, quantum, runfor)
         calculate_metrics(processes)
         # Handle other cases here
         pass
@@ -195,6 +198,74 @@ def sjf_scheduler(processes, runfor):
 
     print(f"Finished at time {runfor:3}")
     processes = sjf_queue.copy()
+    return processes
+
+def rr_scheduler(processes, quantum, runfor):
+    time = 0
+    output = []
+    ready_queue = []
+    processes.sort(key=lambda x: x.arrival_time)
+    finished_processes = 0
+    running_process = None
+    running_process_start_time = 0
+    arrival_before_finish = False
+    rr_queue = processes.copy()
+    
+    print(f'{len(processes)} processes')
+    print('Using Round-Robin')
+    print(f'Quantum {quantum:3}')
+    while time < runfor:
+        # Check for new arrivals
+        for process in processes:
+            if process.arrival_time == time:
+                ready_queue.append(process)
+                print(f"Time {time:3} : {process.name} arrived")
+        
+        if arrival_before_finish == True:
+            time += 1
+            arrival_before_finish = False
+
+        # Check if current process finishes or quantum expires
+        if running_process and (time == running_process_start_time + quantum or running_process.remaining_time == 0):
+            if running_process.remaining_time == 0:
+                print(f"Time {time:3} : {running_process.name} finished")
+                finished_processes += 1
+                running_process = None
+            else:
+                ready_queue.append(running_process)  # Re-queue the running process
+                running_process = None
+
+        # Select next process to run
+        if not running_process and ready_queue:
+            running_process = ready_queue.pop(0)
+            running_process_start_time = time
+            print(f"Time {time:3} : {running_process.name} selected (burst {running_process.remaining_time:3})")
+            if running_process.remaining_time == running_process.burst_time:
+                    running_process.start_time = time
+
+        # Execute process
+        if running_process:
+            running_process.remaining_time -= 1
+            if running_process.remaining_time == 0:
+                for process in processes:
+                    if process.arrival_time == time + 1:
+                        ready_queue.append(process)
+                        print(f"Time {time + 1:3} : {process.name} arrived")
+                        arrival_before_finish = True
+                print(f"Time {time + 1:3} : {running_process.name} finished")
+                running_process.finish_time = time + 1
+                finished_processes += 1
+                running_process = None
+                
+        if arrival_before_finish == False:
+            time += 1  # Move to the next time unit
+
+        # Check if simulation should idle
+        if not running_process and not any(p.arrival_time == time for p in processes) and ready_queue == [] and time < runfor:
+            print(f"Time {time:3} : Idle")
+
+    print(f"Finished at time {time:3}")
+    processes = rr_queue.copy()
     return processes
     
 
