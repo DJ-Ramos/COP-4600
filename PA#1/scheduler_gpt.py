@@ -238,9 +238,9 @@ def rr_scheduler(processes, quantum, runfor):
     rr_queue = processes.copy()
     results = []
     
-    results.append(f'{len(processes)} processes')
+    results.append(f'  {len(processes)} processes')
     results.append('Using Round-Robin')
-    results.append(f'Quantum {quantum:3}')
+    results.append(f'Quantum {quantum:3}\n')
     while time < runfor:
         # Check for new arrivals
         for process in processes:
@@ -259,6 +259,7 @@ def rr_scheduler(processes, quantum, runfor):
                 results.append(f"Time {time:3} : {running_process.name} finished")
                 running_process.status = 'Finished'
                 finished_processes += 1
+                running_process.status = "Finished"
                 running_process = None
             else:
                 ready_queue.append(running_process)  # Re-queue the running process
@@ -287,6 +288,7 @@ def rr_scheduler(processes, quantum, runfor):
                 running_process.status = 'Finished'
                 running_process.finish_time = time + 1
                 finished_processes += 1
+                running_process.status = "Finished"
                 running_process = None
                 
         if arrival_before_finish == False:
@@ -296,7 +298,7 @@ def rr_scheduler(processes, quantum, runfor):
         if not running_process and not any(p.arrival_time == time for p in processes) and ready_queue == [] and time < runfor:
             results.append(f"Time {time:3} : Idle")
 
-    results.append(f"Finished at time {time:3}")
+    results.append(f"Finished at time {time:3}\n")
     processes = rr_queue.copy()
     return processes, results
     
