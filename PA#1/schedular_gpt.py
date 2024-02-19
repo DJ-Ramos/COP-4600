@@ -13,6 +13,7 @@ class Process:
         self.turnaround_time = 0
         self.waiting_time = 0
         self.response_time = 0
+        self.remaining_time = burst_time
 
 
 def main(argv):
@@ -32,7 +33,7 @@ def main(argv):
     }
 
     file = open(
-        rf"{os.path.dirname(os.path.realpath(__file__))}/pa1-testfiles/c10-fcfs.in", 'r')
+        rf"{os.path.dirname(os.path.realpath(__file__))}/pa1-testfiles/c2-rr.in", 'r')
     processes = []
 
     directive = file.readline().split()
@@ -69,6 +70,8 @@ def main(argv):
 
     if use == 'fcfs':
         fifo_schedular(processes, runfor)
+    elif use == 'rr':
+        rr_schedular(processes, runfor, quantum)
     else:
         # Handle other cases here
         pass
@@ -92,6 +95,67 @@ def calculate_metrics(processes):
         process.turnaround_time = process.finish_time - process.arrival_time
         process.waiting_time = process.turnaround_time - process.burst_time
         process.response_time = process.start_time - process.arrival_time
+
+def execute(currentProcess, quantum):
+        if currentProcess.remaining_time > quantum:
+            print(f"Executing {currentProcess.name} for {quantum} units of time")
+            currentProcess.remaining_time -= quantum
+            return quantum
+        else:
+            print(f"Executing {currentProcess.name} for {currentProcess.remaining_time} units of time")
+            time_executed = currentProcess.remaining_time
+            currentProcess.remaining_time = 0
+            return time_executed
+    
+def is_completed(currentProcess):
+        return currentProcess.remaining_time == 0
+
+def rr_schedular(processes, time_units, quantum):
+    print(f"  {len(processes)} processes")
+    print ("Using Round-Robin")
+    print(f"Quantum   {quantum}\n")
+
+    currentTime = 0
+    
+    # Sort the processes by arrival time
+    processes.sort(key=lambda x: x.arrival_time)
+
+    # Copy the processes into the queue
+    queue = []
+
+    # Run for amount of time aloted
+    for currentTime in range(time_units):
+        # Go through each process and add them to the queue if they have arrived
+        for process in processes:
+            if(process.arrival_time == currentTime):
+                print(f"Time   {currentTime} : {process.name} arrived")
+                queue.append(process)
+
+        if queue:
+            # Grab the first process to be processed
+            currentProcess = queue.pop(0)
+            
+            # Now take that process and decrement it by one
+            # If it finishes then move on to the next task
+            # if it still needs more time after going over the time slice
+            # readd to queue
+            currentProcess.start_time = currentTime
+            time_executed = min(quantum, currentProcess.remaining_time)
+            currentProcess.remaining_time -= 1
+
+            # After a time slice if process isn't completed add it back to the queue
+            if not is_completed(currentProcess):
+                queue.append(currentProcess)
+            
+        else:
+            # If the queue is empty
+            print(f"Time {currentTime} : Idle")
+
+    print(f"\nFinished at time  {time_units}\n")
+    calculate_metrics(processes)
+
+
+
 
 
 def fifo_schedular(processes, time_units):
