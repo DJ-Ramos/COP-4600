@@ -15,13 +15,16 @@ class Process:
         self.waiting_time = 0
         self.response_time = 0
 
-
+# Main function is human-generated code
 def main(argv):
     inputFile = sys.argv[1]
 
     # Get the base filename (without extension)
     base_filename = os.path.splitext(inputFile)[0]
 
+    if os.path.splitext(inputFile)[1] != '.in':
+        raise Exception('The input filename should have the extension of ".in"')
+    
     # Create the new filename with the desired extension
     outputFile = base_filename + ".out"
 
@@ -89,7 +92,7 @@ def main(argv):
                 if process.status != "Finished":
                     print(f"{process.name} did not finish", file=f)
                 else:
-                    print(f"{process.name} wait\t{process.waiting_time} turnaround\t{process.turnaround_time} response\t{process.response_time}", file=f)
+                    print(f"{process.name} wait {process.waiting_time:3} turnaround {process.turnaround_time:3} response {process.response_time:3}", file=f)
     else:
         print('Error: Missing parameter end')
 
@@ -121,7 +124,7 @@ def fifo_scheduler(processes, runfor):
             results.append(f"Time {current_time:3} : {arriving_process.name} arrived")
             arriving_process.status = 'Arrived'
 
-        if queue and queue[0].status == 'Arrived':
+        if queue:
             # If there's a process to run, select and run it
             current_process = queue.pop(0)
             results.append(f"Time {current_time:3} : {current_process.name} selected (burst {current_process.burst_time:3})")
@@ -139,7 +142,7 @@ def fifo_scheduler(processes, runfor):
                         break  # Process the next time step
 
             results.append(f"Time {current_time:3} : {current_process.name} finished")
-            arriving_process.status = 'Finished'
+            current_process.status = 'Finished'
             current_process.finish_time = current_process.start_time + current_process.burst_time
         else:
             # If no process is running and there are processes yet to arrive
@@ -152,7 +155,7 @@ def fifo_scheduler(processes, runfor):
         results.append(f'Time {current_time:3} : Idle')
         current_time = current_time + 1
         
-    results.append(f"Finished at time {runfor}\n")
+    results.append(f"Finished at time {runfor:3}\n")
     processes = fifo_queue.copy()
     return processes, results
 
