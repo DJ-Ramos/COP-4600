@@ -257,7 +257,7 @@ def rr_scheduler(processes, quantum, runfor):
         if running_process and (time == running_process_start_time + quantum or running_process.remaining_time == 0):
             if running_process.remaining_time == 0:
                 results.append(f"Time {time:3} : {running_process.name} finished")
-                running_process.status = 'Running'
+                running_process.status = 'Finished'
                 finished_processes += 1
                 running_process = None
             else:
@@ -269,7 +269,7 @@ def rr_scheduler(processes, quantum, runfor):
             running_process = ready_queue.pop(0)
             running_process_start_time = time
             results.append(f"Time {time:3} : {running_process.name} selected (burst {running_process.remaining_time:3})")
-            running_process.status = 'Selected'
+            running_process.status = 'Running'
             if running_process.remaining_time == running_process.burst_time:
                     running_process.start_time = time
 
