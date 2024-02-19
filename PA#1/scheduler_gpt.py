@@ -259,7 +259,6 @@ def rr_scheduler(processes, quantum, runfor):
                 results.append(f"Time {time:3} : {running_process.name} finished")
                 running_process.status = 'Finished'
                 finished_processes += 1
-                running_process.status = "Finished"
                 running_process = None
             else:
                 ready_queue.append(running_process)  # Re-queue the running process
@@ -288,7 +287,6 @@ def rr_scheduler(processes, quantum, runfor):
                 running_process.status = 'Finished'
                 running_process.finish_time = time + 1
                 finished_processes += 1
-                running_process.status = "Finished"
                 running_process = None
                 
         if arrival_before_finish == False:
