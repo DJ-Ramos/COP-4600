@@ -125,6 +125,7 @@ def fifo_scheduler(processes, runfor):
             # If there's a process to run, select and run it
             current_process = queue.pop(0)
             results.append(f"Time {current_time:3} : {current_process.name} selected (burst {current_process.burst_time:3})")
+            current_process.status = 'Running'
             current_process.start_time = current_time
             for _ in range(current_process.burst_time):
                 # Check for process arrivals during the burst time
@@ -243,6 +244,7 @@ def rr_scheduler(processes, quantum, runfor):
             if process.arrival_time == time:
                 ready_queue.append(process)
                 results.append(f"Time {time:3} : {process.name} arrived")
+                process.status = 'Arrived'
         
         if arrival_before_finish == True:
             time += 1
@@ -252,6 +254,7 @@ def rr_scheduler(processes, quantum, runfor):
         if running_process and (time == running_process_start_time + quantum or running_process.remaining_time == 0):
             if running_process.remaining_time == 0:
                 results.append(f"Time {time:3} : {running_process.name} finished")
+                running_process.status = 'Running'
                 finished_processes += 1
                 running_process = None
             else:
@@ -263,6 +266,7 @@ def rr_scheduler(processes, quantum, runfor):
             running_process = ready_queue.pop(0)
             running_process_start_time = time
             results.append(f"Time {time:3} : {running_process.name} selected (burst {running_process.remaining_time:3})")
+            running_process.status = 'Selected'
             if running_process.remaining_time == running_process.burst_time:
                     running_process.start_time = time
 
@@ -274,8 +278,10 @@ def rr_scheduler(processes, quantum, runfor):
                     if process.arrival_time == time + 1:
                         ready_queue.append(process)
                         results.append(f"Time {time + 1:3} : {process.name} arrived")
+                        running_process.status = 'Arrived'
                         arrival_before_finish = True
                 results.append(f"Time {time + 1:3} : {running_process.name} finished")
+                running_process.status = 'Finished'
                 running_process.finish_time = time + 1
                 finished_processes += 1
                 running_process = None
