@@ -1,15 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-typedef enum
-{
-    threads,
-    insert,
-    delete,
-    search,
-    print
-} COMMAND;
+#include "hashdb.h"
 
 int cmdStrToEnum(char *commandName);
 
@@ -17,9 +9,10 @@ int main(int argc, char **argv)
 {
     int salary = 0;
     int arraySize = 0;
-    char *name = (char *)malloc((40) * sizeof(char));
+    char *name = (char *)malloc((50) * sizeof(char));
     char *commandName = (char *)malloc((8) * sizeof(char));
     char *fileRow = (char *)malloc((100) * sizeof(char));
+    pthread_t *thread = NULL;
 
     FILE *fptr = fopen("commands.txt", "r");
 
@@ -29,7 +22,7 @@ int main(int argc, char **argv)
         return EXIT_FAILURE;
     }
 
-    COMMAND commandEnum;
+    int command;
     while (fgets(fileRow, 100, fptr) != NULL)
     {
         fileRow[strlen(fileRow) - 1] = '\0';
@@ -59,23 +52,27 @@ int main(int argc, char **argv)
             token = strtok(NULL, ",");
         }
 
-        commandEnum = cmdStrToEnum(commandName);
+        command = cmdStrToEnum(commandName);
 
-        switch (commandEnum)
+        switch (command)
         {
-        case threads:
+        case 0:
             printf("Threads\n");
+            thread = (pthread_t *)malloc(arraySize * sizeof(pthread_t));
             break;
-        case insert:
+        case 1:
             printf("Insert\n");
+            insert(name, salary);
             break;
-        case delete:
+        case 2:
             printf("Delete\n");
+            delete(name);
             break;
-        case search:
+        case 3:
             printf("Search\n");
+            search(name);
             break;
-        case print:
+        case 4:
             printf("Print\n");
             break;
         default:
