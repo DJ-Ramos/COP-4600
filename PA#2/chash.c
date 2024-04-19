@@ -1,111 +1,110 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <string.h>
+#include <pthread.h>
 #include "hashdb.h"
 
-int cmdStrToEnum(char *commandName);
+#define MAX_COMMAND_LENGTH 50
 
-int main(int argc, char **argv)
+void *process_command(void *arg);
+
+typedef struct
 {
-    int salary = 0;
-    int arraySize = 0;
-    char *name = (char *)malloc((50) * sizeof(char));
-    char *commandName = (char *)malloc((8) * sizeof(char));
-    char *fileRow = (char *)malloc((100) * sizeof(char));
-    pthread_t *thread = NULL;
+    char command[MAX_COMMAND_LENGTH];
+} commandStruct;
 
+FILE *output_file = NULL;
+pthread_mutex_t output_lock;
+
+int main()
+{
     FILE *fptr = fopen("commands.txt", "r");
-    FILE *output = fopen("output.txt", "w");
+    char line[MAX_COMMAND_LENGTH];
+    memset(line, '\0', sizeof(char));
+    int num_commands;
 
-    if (fptr == NULL)
+    if (!fptr)
     {
-        fprintf(stderr, "File not found or could not be opened\n");
+        perror("Failed to open file");
         return EXIT_FAILURE;
     }
 
-    int command;
-    while (fgets(fileRow, 100, fptr) != NULL)
+    fgets(line, sizeof(line), fptr); // Read the first line for number of threads
+    sscanf(line, "threads,%d,0", &num_commands);
+    printf("Running %d threads\n", num_commands);
+    pthread_t *threads = malloc(num_commands * sizeof(pthread_t));
+    if (threads == NULL)
     {
-        fileRow[strlen(fileRow) - 1] = '\0';
-        char *token = strtok(fileRow, ",");
-
-        for (size_t i = 0; i < 3; i++)
-        {
-            if (i == 0)
-            {
-                strcpy(commandName, token);
-            }
-            else if (i == 1)
-            {
-                if (atoi(token) != 0)
-                {
-                    arraySize = atoi(token);
-                }
-                else
-                {
-                    strcpy(name, token);
-                }
-            }
-            else
-            {
-                salary = atoi(token);
-            }
-            token = strtok(NULL, ",");
-        }
-
-        command = cmdStrToEnum(commandName);
-
-        switch (command)
-        {
-        case 0:
-            fprintf(output, "Running %d Threads\n", arraySize);
-            thread = (pthread_t *)malloc(arraySize * sizeof(pthread_t));
-            break;
-        case 1:
-            fprintf(output, "INSERT,");
-            insert(name, salary, output);
-            break;
-        case 2:
-            fprintf(output, "DELETE,");
-            delete(name, output);
-            break;
-        case 3:
-            fprintf(output, "SEARCH, %s\n", name);
-            search(name, output);
-            break;
-        case 4:
-            printTable(output);
-            break;
-        default:
-            fprintf(stderr, "Inputted Command Does Not Exist\n");
-            break;
-        }
+        perror("Failed to allocate memory for threads");
+        fclose(fptr);
+        return EXIT_FAILURE;
     }
 
+    commandStruct *commands = malloc(num_commands * sizeof(commandStruct));
+    if (commands == NULL)
+    {
+        perror("Failed to allocate memory for commands");
+        free(threads);
+        fclose(fptr);
+        return EXIT_FAILURE;
+    }
+
+    output_file = fopen("output.txt", "w");
+    if (!output_file)
+    {
+        perror("Failed to open output file");
+        free(threads);
+        free(commands);
+        fclose(fptr);
+        return EXIT_FAILURE;
+    }
+
+    int i = 0;
+    while (fgets(line, sizeof(line), fptr) && i < num_commands)
+    {
+        strcpy(commands[i].command, line);
+        pthread_create(&threads[i], NULL, process_command, &commands[i]);
+        i++;
+    }
+
+    for (int j = 0; j < i; j++)
+    {
+        pthread_join(threads[j], NULL);
+    }
+
+    fclose(fptr);
+    fclose(output_file);
+    free(threads);
+    free(commands);
     return 0;
 }
 
-int cmdStrToEnum(char *commandName)
+void *process_command(void *arg)
 {
-    if (strcmp(commandName, "threads") == 0)
+    commandStruct *cmd = (commandStruct *)arg;
+    char name[50];
+    uint32_t salary;
+
+    if (sscanf(cmd->command, "insert,%50[^,],%u", name, &salary) == 2)
     {
-        return 0;
+        insert(name, salary);
     }
-    else if (strcmp(commandName, "insert") == 0)
+    else if (sscanf(cmd->command, "delete,%50s", name) == 1)
     {
-        return 1;
+        delete(name);
     }
-    else if (strcmp(commandName, "delete") == 0)
+    else if (sscanf(cmd->command, "search,%50s", name) == 1)
     {
-        return 2;
+        uint32_t found_salary = search(name);
+        pthread_mutex_lock(&output_lock);
+        fprintf(output_file, "%s: %u\n", name, found_salary);
+        pthread_mutex_unlock(&output_lock);
     }
-    else if (strcmp(commandName, "search") == 0)
+    else if (strcmp(cmd->command, "print,0,0\n") == 0)
     {
-        return 3;
+        print();
     }
-    else if (strcmp(commandName, "print") == 0)
-    {
-        return 4;
-    }
-    return -1;
+
+    return NULL;
 }
