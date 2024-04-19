@@ -16,7 +16,7 @@ typedef struct hash_struct {
 void insert(char *key, uint32_t salary, FILE *output);
 void delete(char *key, FILE *output);
 uint32_t search(char *key, FILE *output);
-void print(FILE *output);
+void printTable(FILE *output);
 
 // Lock for concurrency control
 pthread_rwlock_t lock;
