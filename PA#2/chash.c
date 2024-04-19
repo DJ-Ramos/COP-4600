@@ -15,6 +15,7 @@ int main(int argc, char **argv)
     pthread_t *thread = NULL;
 
     FILE *fptr = fopen("commands.txt", "r");
+    FILE *output = fopen("output.txt", "w");
 
     if (fptr == NULL)
     {
@@ -57,23 +58,22 @@ int main(int argc, char **argv)
         switch (command)
         {
         case 0:
-            printf("Threads\n");
+            fprintf(output, "Running %d Threads\n", arraySize);
             thread = (pthread_t *)malloc(arraySize * sizeof(pthread_t));
             break;
         case 1:
-            printf("Insert\n");
+            fprintf(output, "INSERT,");
             insert(name, salary);
             break;
         case 2:
-            printf("Delete\n");
+            fprintf(output, "DELETE,");
             delete(name);
             break;
         case 3:
-            printf("Search\n");
+            fprintf(output, "SEARCH, %s\n", name);
             search(name);
             break;
         case 4:
-            printf("Print\n");
             printTable();
             break;
         default:
