@@ -101,6 +101,19 @@ uint32_t search(char *key) {
     return 0; // Assuming 0 is not a valid salary and indicates not found
 }
 
+void printTable() {
+    rwlock_acquire_readlock(&lock);
+    hashRecord *entry;
+    for (int n = 0; n < 256; n++) {
+        entry = hashTable[n];
+        while (entry != NULL) {
+            if (entry != NULL) fprintf(output, "%u, %s, %u\n", entry->hash, entry->name, entry->salary);
+            entry = entry->next;
+        }
+    }
+    rwlock_release_readlock(&lock);
+}
+
 // Example command processing
 int main() {
     // Initialize hash table
