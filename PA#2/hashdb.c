@@ -124,6 +124,11 @@ void print()
 {
     rwlock_acquire_readlock(&lock);
     printf("\n");
+    hashRecord *entry = hashTable;
+    while (entry != NULL) {
+        printf("%u, %s, %u\n", entry->hash, entry->name, entry->salary);
+        entry = entry->next;
+    }
     rwlock_release_readlock(&lock);
     printf("\n");
 }
