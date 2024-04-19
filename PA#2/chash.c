@@ -74,6 +74,7 @@ int main(int argc, char **argv)
             break;
         case 4:
             printf("Print\n");
+            printTable();
             break;
         default:
             fprintf(stderr, "Inputted Command Does Not Exist\n");
