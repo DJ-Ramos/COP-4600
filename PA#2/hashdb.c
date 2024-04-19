@@ -19,16 +19,15 @@ uint32_t jenkins_one_at_a_time_hash(char *key, size_t len) {
 }
 
 // Initialize the hash table and lock
-hashRecord *hashTable[256]; // Simplified size for demonstration
-rwlock_t lock = NULL;
-rwlock_init(&lock);
+hashRecord *hashTable; // Simplified size for demonstration
 
 // Insert function with output
-void insert(char *key, uint32_t salary, FILE *output) {
+void insert(char *key, uint32_t salary) {
     uint32_t hash = jenkins_one_at_a_time_hash(key, strlen(key));
+    printf("\nINSERT,%u,%s,%u\n", hash, key, salary);
     rwlock_acquire_writelock(&lock);
     hashRecord *prev = NULL;
-    hashRecord *entry = hashTable[hash % 256];
+    hashRecord *entry = hashTable;
 
     while (entry != NULL && strcmp(entry->name, key) != 0) {
         prev = entry;
@@ -41,27 +40,26 @@ void insert(char *key, uint32_t salary, FILE *output) {
         strcpy(entry->name, key);
         entry->salary = salary;
         entry->next = NULL;
-        
+
         if (prev == NULL) {
-            hashTable[hash % 256] = entry;
+            hashTable = entry;
         } else {
             prev->next = entry;
         }
-        fprintf(output, "%u, %s, %u\n", hash, key, salary);
     } else {
         // Update existing entry
         entry->salary = salary;
-        fprintf(output, "%u, %s, %u\n", hash, key, salary);
     }
     rwlock_release_writelock(&lock);
 }
 
 // Delete function with output
-void delete(char *key, FILE *output) {
+void delete(char *key) {
     uint32_t hash = jenkins_one_at_a_time_hash(key, strlen(key));
+    printf("DELETE,%s\n", key);
     rwlock_acquire_writelock(&lock);
     hashRecord *prev = NULL;
-    hashRecord *entry = hashTable[hash % 256];
+    hashRecord *entry = hashTable;
 
     while (entry != NULL && strcmp(entry->name, key) != 0) {
         prev = entry;
@@ -70,60 +68,30 @@ void delete(char *key, FILE *output) {
 
     if (entry != NULL) {
         if (prev == NULL) {
-            hashTable[hash % 256] = entry->next;
+            hashTable = entry->next;
         } else {
             prev->next = entry->next;
         }
-        fprintf(output, "%u, %s\n", hash, key);
         free(entry);
-    } else {
-        printf("Delete Attempted: Hash=%u, Name=%s (Not Found)\n", hash, key);
     }
     rwlock_release_writelock(&lock);
 }
 
 // Search function with output
-uint32_t search(char *key, FILE *output) {
+uint32_t search(char *key) {
     uint32_t hash = jenkins_one_at_a_time_hash(key, strlen(key));
+    printf("SEARCH,%s\n", key);
     rwlock_acquire_readlock(&lock);
-    hashRecord *entry = hashTable[hash % 256];
+    hashRecord *entry = hashTable;
+
 
     while (entry != NULL) {
         if (strcmp(entry->name, key) == 0) {
             rwlock_release_readlock(&lock);
-            fprintf(output, "%u, %s, %u\n", hash, key, entry->salary);
-            return entry->salary;
+            return entry;
         }
         entry = entry->next;
     }
     rwlock_release_readlock(&lock);
-    printf("Search: Hash=%u, Name=%s (Not Found)\n", hash, key);
-    return 0; // Assuming 0 is not a valid salary and indicates not found
-}
-
-void printTable(FILE *output) {
-    rwlock_acquire_readlock(&lock);
-    hashRecord *entry;
-    for (int n = 0; n < 256; n++) {
-        entry = hashTable[n];
-        while (entry != NULL) {
-            if (entry != NULL) fprintf(output, "%u, %s, %u\n", entry->hash, entry->name, entry->salary);
-            entry = entry->next;
-        }
-    }
-    rwlock_release_readlock(&lock);
-}
-
-// Example command processing
-int main() {
-    // Initialize hash table
-    memset(hashTable, 0, sizeof(hashTable));
-    
-    // Process sample commands
-    FILE *example = fopen("example.txt", "w");
-    insert("John Doe", 45000);
-    delete("John Doe");
-    search("John Doe");
-
-    return 0;
+    return NULL;
 }
