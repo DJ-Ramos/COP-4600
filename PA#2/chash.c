@@ -63,18 +63,18 @@ int main(int argc, char **argv)
             break;
         case 1:
             fprintf(output, "INSERT,");
-            insert(name, salary);
+            insert(name, salary, output);
             break;
         case 2:
             fprintf(output, "DELETE,");
-            delete(name);
+            delete(name, output);
             break;
         case 3:
             fprintf(output, "SEARCH, %s\n", name);
-            search(name);
+            search(name, output);
             break;
         case 4:
-            printTable();
+            printTable(output);
             break;
         default:
             fprintf(stderr, "Inputted Command Does Not Exist\n");
