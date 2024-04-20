@@ -21,7 +21,7 @@ uint32_t jenkins_one_at_a_time_hash(char *key, size_t len)
     return hash;
 }
 
-hashRecord *hashTable;
+hashRecord *hashTable = NULL;
 
 void insert(char *key, uint32_t salary)
 {
@@ -69,7 +69,7 @@ void delete(char *key)
     hashRecord *prev = NULL;
     hashRecord *record = hashTable;
 
-    while (record != NULL && strcmp(record->name, key) != 0)
+    while (record != NULL && hash == record->hash)
     {
         prev = record;
         record = record->next;
@@ -99,7 +99,7 @@ hashRecord *search(char *key)
 
     while (record != NULL)
     {
-        if (strcmp(record->name, key) == 0)
+        if (hash == record->hash)
         {
             rwlock_release_readlock(&lock);
             return record;
@@ -122,7 +122,7 @@ void print()
     rwlock_release_readlock(&lock);
 }
 
-hashRecord *sortRecords(unsigned short records)
+/*hashRecord *sortRecords(unsigned short records)
 {
     rwlock_acquire_readlock(&lock);
     hashRecord *record = hashTable;
@@ -130,9 +130,9 @@ hashRecord *sortRecords(unsigned short records)
 
     for (int i = 0; i < records - 1; i++)
     {
-        for (int j = i + 1; j < records; j++)
+        for (int j = 0; j < records - i - 1; j++)
         {
-            if (record->hash > record->next->hash)
+            if (record->hash < record->next->hash)
             {
                 temp = record;
                 record = record->next;
@@ -144,4 +144,4 @@ hashRecord *sortRecords(unsigned short records)
 
     rwlock_release_readlock(&lock);
     return hashTable;
-}
+}*/

@@ -15,12 +15,11 @@ typedef struct hash_struct
 } hashRecord;
 
 extern FILE *outputFile;
-// rwlock_t lock; 
 
 void insert(char *key, uint32_t salary);
 void delete(char *key);
 hashRecord *search(char *key);
 void print();
-hashRecord *sortRecords(unsigned short records);
+//hashRecord *sortRecords(unsigned short records);
 
 #endif // HASHDB_H

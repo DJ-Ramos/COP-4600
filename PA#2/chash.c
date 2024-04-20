@@ -75,17 +75,18 @@ int main()
         pthread_join(threads[j], NULL);
     }
 
-    hashRecord *records = sortRecords(numRecord);
+    //hashRecord *records = sortRecords(numRecord);
     numLock++;
     fprintf(outputFile, "Number of lock acquisitions: %u\n", numLock);
     fprintf(outputFile, "Number of lock releases: %u\n", numLock);
     fprintf(outputFile, "Final Table:\n");
+    print();
 
-    for(int i = 0; i < numRecord; i++)
+    /*for(int i = 0; i < numRecord; i++)
     {
         fprintf(outputFile,"%u,%s,%u\n", records->hash, records->name, records->salary);
         records = records->next;
-    }
+    }*/
 
     fclose(fptr);
     fclose(outputFile);
