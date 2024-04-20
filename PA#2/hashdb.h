@@ -15,7 +15,7 @@ typedef struct hash_struct
 } hashRecord;
 
 extern FILE *outputFile;
-rwlock_t lock;
+// rwlock_t lock; 
 
 void insert(char *key, uint32_t salary);
 void delete(char *key);

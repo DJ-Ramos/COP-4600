@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+rwlock_t lock;
+
 uint32_t jenkins_one_at_a_time_hash(char *key, size_t len)
 {
     uint32_t hash = 0;
