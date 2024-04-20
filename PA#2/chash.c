@@ -14,14 +14,15 @@ typedef struct
     char command[MAX_COMMAND_LENGTH];
 } commandStruct;
 
-FILE *output_file = NULL;
+FILE *outputFile;
+unsigned short numLock = 0, numRecord = 0;
 pthread_mutex_t output_lock;
 
 int main()
 {
     FILE *fptr = fopen("commands.txt", "r");
     char line[MAX_COMMAND_LENGTH];
-    memset(line, '\0', sizeof(char));
+    memset(line, '\0', 50 * sizeof(char));
     int num_commands;
 
     if (!fptr)
@@ -32,7 +33,6 @@ int main()
 
     fgets(line, sizeof(line), fptr); // Read the first line for number of threads
     sscanf(line, "threads,%d,0", &num_commands);
-    printf("Running %d threads\n", num_commands);
     pthread_t *threads = malloc(num_commands * sizeof(pthread_t));
     if (threads == NULL)
     {
@@ -50,8 +50,8 @@ int main()
         return EXIT_FAILURE;
     }
 
-    output_file = fopen("output.txt", "w");
-    if (!output_file)
+    outputFile = fopen("output.txt", "w");
+    if (!outputFile)
     {
         perror("Failed to open output file");
         free(threads);
@@ -59,6 +59,8 @@ int main()
         fclose(fptr);
         return EXIT_FAILURE;
     }
+
+    fprintf(outputFile, "Running %d threads\n", num_commands);
 
     int i = 0;
     while (fgets(line, sizeof(line), fptr) && i < num_commands)
@@ -73,37 +75,62 @@ int main()
         pthread_join(threads[j], NULL);
     }
 
+    hashRecord *records = sortRecords(numRecord);
+    numLock++;
+    fprintf(outputFile, "Number of lock acquisitions: %u\n", numLock);
+    fprintf(outputFile, "Number of lock releases: %u\n", numLock);
+    fprintf(outputFile, "Final Table:\n");
+
+    for(int i = 0; i < numRecord; i++)
+    {
+        fprintf(outputFile,"%u,%s,%u\n", records->hash, records->name, records->salary);
+        records = records->next;
+    }
+
     fclose(fptr);
-    fclose(output_file);
+    fclose(outputFile);
     free(threads);
     free(commands);
-    return 0;
+    return EXIT_SUCCESS;
 }
 
-void *process_command(void *arg)
+void *process_command(void *command)
 {
-    commandStruct *cmd = (commandStruct *)arg;
+    commandStruct *cmd = (commandStruct *)command;
     char name[50];
     uint32_t salary;
 
     if (sscanf(cmd->command, "insert,%50[^,],%u", name, &salary) == 2)
     {
         insert(name, salary);
+        numRecord++;
+        numLock++;
     }
-    else if (sscanf(cmd->command, "delete,%50s", name) == 1)
+    else if (sscanf(cmd->command, "delete,%50[^,]", name) == 1)
     {
         delete(name);
+        numRecord--;
+        numLock++;
     }
-    else if (sscanf(cmd->command, "search,%50s", name) == 1)
+    else if (sscanf(cmd->command, "search,%50[^,]", name) == 1)
     {
-        uint32_t found_salary = search(name);
+        hashRecord *record = search(name);
         pthread_mutex_lock(&output_lock);
-        fprintf(output_file, "%s: %u\n", name, found_salary);
+        if (record == NULL)
+        {
+            fprintf(outputFile, "No Record Found\n");
+        }
+        else
+        {
+            fprintf(outputFile, "%u,%s,%u\n", record->hash, record->name, record->salary);
+        }
         pthread_mutex_unlock(&output_lock);
+        numLock++;
     }
     else if (strcmp(cmd->command, "print,0,0\n") == 0)
     {
         print();
+        numLock++;
     }
 
     return NULL;

@@ -4,7 +4,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-// Jenkins's one-at-a-time hash function
 uint32_t jenkins_one_at_a_time_hash(char *key, size_t len)
 {
     uint32_t hash = 0;
@@ -22,113 +21,125 @@ uint32_t jenkins_one_at_a_time_hash(char *key, size_t len)
 
 hashRecord *hashTable;
 
-// Insert function with output
 void insert(char *key, uint32_t salary)
 {
     uint32_t hash = jenkins_one_at_a_time_hash(key, strlen(key));
-    printf("INSERT,%u,%s,%u\n", hash, key, salary);
+    fprintf(outputFile,"INSERT,%u,%s,%u\n", hash, key, salary);
     rwlock_acquire_writelock(&lock);
-    printf("\n");
     hashRecord *prev = NULL;
-    hashRecord *entry = hashTable;
+    hashRecord *record = hashTable;
 
-    while (entry != NULL && strcmp(entry->name, key) != 0)
+    while (record != NULL && strcmp(record->name, key) != 0)
     {
-        prev = entry;
-        entry = entry->next;
+        prev = record;
+        record = record->next;
     }
 
-    if (entry == NULL)
+    if (record == NULL)
     {
-        entry = (hashRecord *)malloc(sizeof(hashRecord));
-        entry->hash = hash;
-        strcpy(entry->name, key);
-        entry->salary = salary;
-        entry->next = NULL;
+        record = (hashRecord *)malloc(sizeof(hashRecord));
+        record->hash = hash;
+        strcpy(record->name, key);
+        record->salary = salary;
+        record->next = NULL;
 
         if (prev == NULL)
         {
-            hashTable = entry;
+            hashTable = record;
         }
         else
         {
-            prev->next = entry;
+            prev->next = record;
         }
     }
     else
     {
-        // Update existing entry
-        entry->salary = salary;
+        record->salary = salary;
     }
     rwlock_release_writelock(&lock);
-    printf("\n");
 }
 
-// Delete function with output
 void delete(char *key)
 {
     uint32_t hash = jenkins_one_at_a_time_hash(key, strlen(key));
-    printf("DELETE,%s\n", key);
+    fprintf(outputFile,"DELETE,%s\n", key);
     rwlock_acquire_writelock(&lock);
-    printf("\n");
     hashRecord *prev = NULL;
-    hashRecord *entry = hashTable;
+    hashRecord *record = hashTable;
 
-    while (entry != NULL && strcmp(entry->name, key) != 0)
+    while (record != NULL && strcmp(record->name, key) != 0)
     {
-        prev = entry;
-        entry = entry->next;
+        prev = record;
+        record = record->next;
     }
 
-    if (entry != NULL)
+    if (record != NULL)
     {
         if (prev == NULL)
         {
-            hashTable = entry->next;
+            hashTable = record->next;
         }
         else
         {
-            prev->next = entry->next;
+            prev->next = record->next;
         }
-        free(entry);
+        free(record);
     }
     rwlock_release_writelock(&lock);
-    printf("\n");
 }
 
-// Search function with output
-uint32_t search(char *key)
+hashRecord *search(char *key)
 {
     uint32_t hash = jenkins_one_at_a_time_hash(key, strlen(key));
-    printf("SEARCH,%s\n", key);
+    fprintf(outputFile,"SEARCH,%s\n", key);
     rwlock_acquire_readlock(&lock);
-    printf("\n");
-    hashRecord *entry = hashTable;
+    hashRecord *record = hashTable;
 
-
-    while (entry != NULL)
+    while (record != NULL)
     {
-        if (strcmp(entry->name, key) == 0)
+        if (strcmp(record->name, key) == 0)
         {
             rwlock_release_readlock(&lock);
-            return entry->hash;
+            return record;
         }
-        entry = entry->next;
+        record = record->next;
     }
     rwlock_release_readlock(&lock);
-    printf("\n");
-    return 0;
+    return NULL;
 }
 
 void print()
 {
     rwlock_acquire_readlock(&lock);
-    printf("\n");
-    hashRecord *entry = hashTable;
-    while (entry != NULL) {
-        printf("%u, %s, %u\n", entry->hash, entry->name, entry->salary);
-        entry = entry->next;
+    hashRecord *record = hashTable;
+    while (record != NULL)
+    {
+        fprintf(outputFile,"%u,%s,%u\n", record->hash, record->name, record->salary);
+        record = record->next;
     }
     rwlock_release_readlock(&lock);
-    printf("\n");
+}
+
+hashRecord *sortRecords(unsigned short records)
+{
+    rwlock_acquire_readlock(&lock);
+    hashRecord *record = hashTable;
+    hashRecord *temp = NULL;
+
+    for (int i = 0; i < records - 1; i++)
+    {
+        for (int j = i + 1; j < records; j++)
+        {
+            if (record->hash > record->next->hash)
+            {
+                temp = record;
+                record = record->next;
+                record->next = temp;
+
+            }
+        }
+    }
+
+    rwlock_release_readlock(&lock);
+    return hashTable;
 }

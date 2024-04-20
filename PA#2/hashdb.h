@@ -4,22 +4,23 @@
 #include "rwlocks.h"
 #include <stdint.h>
 #include <pthread.h>
+#include <stdio.h>
 
-// Define the structure for hash records
-typedef struct hash_struct {
+typedef struct hash_struct
+{
     uint32_t hash;
     char name[50];
     uint32_t salary;
     struct hash_struct *next;
 } hashRecord;
 
-// Function prototypes
+extern FILE *outputFile;
+rwlock_t lock;
+
 void insert(char *key, uint32_t salary);
 void delete(char *key);
-uint32_t search(char *key);
+hashRecord *search(char *key);
 void print();
-
-// Lock for concurrency control
-rwlock_t lock;
+hashRecord *sortRecords(unsigned short records);
 
 #endif // HASHDB_H

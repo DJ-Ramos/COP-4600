@@ -3,6 +3,7 @@
 #define READ_WRITE_LOCKS_HEADER_FILE
 
 #include <semaphore.h>
+#include <stdio.h>
 
 typedef struct rwlock_t
 {
