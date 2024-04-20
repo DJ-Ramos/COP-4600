@@ -88,7 +88,7 @@ void *writer(void *arg)
     printf("write done\n");
     return NULL;
 }
-
+/*
 int main(int argc, char *argv[])
 {
     if (argc != 3)
@@ -108,3 +108,4 @@ int main(int argc, char *argv[])
     printf("all done\n");
     return 0;
 }
+*/
